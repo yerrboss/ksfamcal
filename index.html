@@ -150,7 +150,15 @@
         overflow: auto;
         background-color: rgba(0, 0, 0, 0.4);
       }
-
+      .modal-title {
+        text-align: center;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+      }
+      .modal-content {
+        position: relative;
+        padding-bottom: 60px; /* Adjust based on button container height */
+      }
       .modal-body {
         display: flex;
         justify-content: space-between;
@@ -163,12 +171,15 @@
 
       .button-container {
         display: flex;
-        flex-direction: column;
+        justify-content: flex-end;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
       }
 
       .button-container button {
-        margin-bottom: 10px;
-        width: 120px;
+        margin-left: 10px;
       }
 
       #noteText {
@@ -289,17 +300,19 @@
   <div class="full-view" id="fullYearView" style="display: none">
     <!-- Full Year Calendar Grid -->
   </div>
-  <div id="noteModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 id="modalDate"></h2>
-      <div id="notesList"></div>
-      <textarea id="noteText" rows="4" cols="50"></textarea>
-      <button id="toggleNote">Add/Delete Notes</button>
-      <button id="toggleDayOff">Mark as Day Off</button>
-      <button id="togglemonthlyleave">Use Monthly Leave</button>
-    </div>
+
+<div id="noteModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2 id="modalDate"></h2>
+    <div id="notesList"></div>
+    <textarea id="noteText" rows="4" cols="50"></textarea>
+    <button id="addNote">Add Note</button>
+    <button id="deleteSelectedNotes">Delete Selected Notes</button>
+    <button id="toggleDayOff">Mark as Day Off</button>
+    <button id="togglemonthlyleave">Use Monthly Leave</button>
   </div>
+</div>
 
   <div class="input-container">
     <label for="daysOff">Days Off:</label>
@@ -561,87 +574,90 @@
     generateCalendar(currentMonth, currentYear);
   };
 
-  function showNoteModal(date) {
-    const modal = document.getElementById("noteModal");
-    const modalDate = document.getElementById("modalDate");
-    const notesList = document.getElementById("notesList");
-    const noteText = document.getElementById("noteText");
-    const toggleNoteBtn = document.getElementById("toggleNote");
-    const toggleDayOffBtn = document.getElementById("toggleDayOff");
-    const togglemonthlyleaveBtn = document.getElementById("togglemonthlyleave");
+function showNoteModal(date) {
+  const modal = document.getElementById("noteModal");
+  const modalDate = document.getElementById("modalDate");
+  const notesList = document.getElementById("notesList");
+  const noteText = document.getElementById("noteText");
+  const addNoteBtn = document.getElementById("addNote");
+  const deleteSelectedNotesBtn = document.getElementById("deleteSelectedNotes");
+  const toggleDayOffBtn = document.getElementById("toggleDayOff");
+  const togglemonthlyleaveBtn = document.getElementById("togglemonthlyleave");
 
-    modal.style.display = "block";
-    modalDate.textContent = date;
+  modal.style.display = "block";
+  modalDate.textContent = date;
 
-    function toggleNote() {
-      if (notes[date] && notes[date].length > 0) {
-        // Delete note
-        notes[date] = [];
-      } else {
-        // Add note
-        if (noteText.value.trim() !== "") {
-          if (!notes[date]) notes[date] = [];
-          notes[date].push(noteText.value);
-          noteText.value = "";
-        }
-      }
+  addNoteBtn.onclick = () => {
+    if (noteText.value.trim() !== "") {
+      if (!notes[date]) notes[date] = [];
+      notes[date].push(noteText.value);
+      noteText.value = "";
       updateNotesList(date);
       generateCalendar(currentMonth, currentYear); // Update single month view
       generateFullYearView(currentYear); // Update full year view
     }
+  };
 
-    toggleNoteBtn.textContent = notes[date] && notes[date].length > 0 ? "Delete Notes" : "Add Notes";
-    toggleNoteBtn.onclick = () => {
-      toggleNote();
-      toggleNoteBtn.textContent = notes[date] && notes[date].length > 0 ? "Delete Notes" : "Add Notes";
-    };
-
-    toggleDayOffBtn.textContent = isDayOff(date) ? "Cancel Day Off" : "Mark as Day Off";
-    toggleDayOffBtn.onclick = () => {
-      if (isDayOff(date)) {
-        notes[date] = notes[date].filter(note => note !== "Day Off");
-        daysOffUsed--;
-      } else {
-        if (!notes[date]) notes[date] = [];
-        notes[date].push("Day Off");
-        daysOffUsed++;
-      }
-      updateDaysOffCounter();
-      updateCalendarDay(date);
-      generateCalendar(currentMonth, currentYear); // Update single month view
-      generateFullYearView(currentYear); // Update full year view
-    };
-
-    togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel monthlyleave" : "Use monthlyleave";
-    togglemonthlyleaveBtn.onclick = () => {
-      if (ismonthlyleaveUsed(date)) {
-        notes[date] = notes[date].filter(note => note !== "monthlyleave Used");
-        monthlyLeaveUsed--;
-      } else {
-        if (!notes[date]) notes[date] = [];
-        notes[date].push("monthlyleave Used");
-        monthlyLeaveUsed++;
-      }
-      updateMonthlyLeaveCounter();
-      updateCalendarDay(date);
-      generateCalendar(currentMonth, currentYear); // Update single month view
-      generateFullYearView(currentYear); // Update full year view
-    };
-
+  deleteSelectedNotesBtn.onclick = () => {
+    const checkboxes = notesList.querySelectorAll('input[type="checkbox"]:checked');
+    checkboxes.forEach(checkbox => {
+      const noteIndex = parseInt(checkbox.dataset.index);
+      notes[date].splice(noteIndex, 1);
+    });
     updateNotesList(date);
-  }
+    generateCalendar(currentMonth, currentYear); // Update single month view
+    generateFullYearView(currentYear); // Update full year view
+  };
 
-  function updateNotesList(date) {
-    const notesList = document.getElementById("notesList");
-    notesList.innerHTML = "";
-    if (notes[date]) {
-      notes[date].forEach(note => {
-        const noteDiv = document.createElement("div");
-        noteDiv.textContent = note;
-        notesList.appendChild(noteDiv);
-      });
+  toggleDayOffBtn.textContent = isDayOff(date) ? "Cancel Day Off" : "Mark as Day Off";
+  toggleDayOffBtn.onclick = () => {
+    if (isDayOff(date)) {
+      notes[date] = notes[date].filter(note => note !== "Day Off");
+      daysOffUsed--;
+    } else {
+      if (!notes[date]) notes[date] = [];
+      notes[date].push("Day Off");
+      daysOffUsed++;
     }
+    updateDaysOffCounter();
+    updateCalendarDay(date);
+    generateCalendar(currentMonth, currentYear); // Update single month view
+    generateFullYearView(currentYear); // Update full year view
+  };
+
+  togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel monthlyleave" : "Use monthlyleave";
+  togglemonthlyleaveBtn.onclick = () => {
+    if (ismonthlyleaveUsed(date)) {
+      notes[date] = notes[date].filter(note => note !== "monthlyleave Used");
+      monthlyLeaveUsed--;
+    } else {
+      if (!notes[date]) notes[date] = [];
+      notes[date].push("monthlyleave Used");
+      monthlyLeaveUsed++;
+    }
+    updateMonthlyLeaveCounter();
+    updateCalendarDay(date);
+    generateCalendar(currentMonth, currentYear); // Update single month view
+    generateFullYearView(currentYear); // Update full year view
+  };
+
+  updateNotesList(date);
+}
+
+function updateNotesList(date) {
+  const notesList = document.getElementById("notesList");
+  notesList.innerHTML = "";
+  if (notes[date]) {
+    notes[date].forEach((note, index) => {
+      const noteDiv = document.createElement("div");
+      noteDiv.innerHTML = `
+        <input type="checkbox" data-index="${index}"/>
+        <span>${note}</span>
+      `;
+      notesList.appendChild(noteDiv);
+    });
   }
+}
 
   function updateCalendarDay(date) {
     const [month, day, year] = date.split("-");
