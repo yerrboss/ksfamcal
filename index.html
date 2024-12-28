@@ -292,7 +292,7 @@
     <div class="calendar-grid" id="calendarGrid">
       <!-- Calendar days will be inserted here -->
     </div>
-<div class="caption" id="holidayCaption"></div>
+    <div class="caption" id="holidayCaption"></div>
   </div>
   <button id="backToSingleMonth" style="display: none">
     Back to Single Month
@@ -300,7 +300,7 @@
   <div class="full-view" id="fullYearView" style="display: none">
     <!-- Full Year Calendar Grid -->
   </div>
-
+  
   <div id="noteModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -313,7 +313,7 @@
       <button id="togglemonthlyleave">Use Monthly Leave</button>
     </div>
   </div>
-
+  
   <div class="input-container">
     <label for="daysOff">Days Off:</label>
     <input type="number" id="daysOff" min="0" value="0" />
@@ -324,6 +324,8 @@
     <input type="number" id="monthlyLeave" min="0" max="1" step="1" value="0" />
     <div id="monthlyLeaveCounter">Remaining: 0</div>
   </div>
+  
+  <button id="resetBtn">Reset</button> <!-- Added Reset Button -->
 
 <script>
   const holidays2025 = {
@@ -374,15 +376,16 @@
 
     document.getElementById("daysOff").addEventListener("change", function () {
       daysOffTotal = parseInt(this.value);
+      daysOffUsed = 0; // Reset used days off when a new total is input
       updateDaysOffCounter();
     });
 
     document.getElementById("monthlyLeave").addEventListener("change", function () {
       if (this.value > 1) {
         this.value = 1;
-        alert("monthlyleave can only be 0 or 1");
+        alert("Monthly leave can only be 0 or 1");
       }
-      monthlyLeaveUsed = 0;
+      monthlyLeaveUsed = 0; // Reset used monthly leave when a new total is input
       updateMonthlyLeaveCounter();
     });
 
@@ -616,7 +619,7 @@ function showNoteModal(date) {
         }
       };
 
-      deleteSelectedNotesBtn.onclick = () => {
+       deleteSelectedNotesBtn.onclick = () => {
         const checkboxes = notesList.querySelectorAll('input[type="checkbox"]:checked');
         checkboxes.forEach(checkbox => {
           const noteIndex = parseInt(checkbox.dataset.index);
@@ -645,14 +648,14 @@ function showNoteModal(date) {
         saveData();
       };
 
-      togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel monthlyleave" : "Use monthlyleave";
+      togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel Monthly Leave" : "Use Monthly Leave";
       togglemonthlyleaveBtn.onclick = () => {
         if (ismonthlyleaveUsed(date)) {
-          notes[date] = notes[date].filter(note => note !== "monthlyleave Used");
+          notes[date] = notes[date].filter(note => note !== "Monthly Leave Used");
           monthlyLeaveUsed--;
         } else {
           if (!notes[date]) notes[date] = [];
-          notes[date].push("monthlyleave Used");
+          notes[date].push("Monthly Leave Used");
           monthlyLeaveUsed++;
         }
         updateMonthlyLeaveCounter();
@@ -661,6 +664,7 @@ function showNoteModal(date) {
         generateFullYearView(currentYear);
         saveData();
       };
+
 
   updateNotesList(date);
 }
@@ -729,6 +733,23 @@ function showNoteModal(date) {
       updateNotesList(date);
     }
   }
+    
+      function resetCalendar() {
+      notes = {};
+      daysOffTotal = 0;
+      daysOffUsed = 0;
+      monthlyLeaveUsed = 0;
+      saveData();
+
+      document.getElementById("daysOff").value = daysOffTotal;
+      document.getElementById("monthlyLeave").value = monthlyLeaveUsed;
+      updateDaysOffCounter();
+      updateMonthlyLeaveCounter();
+      generateCalendar(currentMonth, currentYear);
+      generateFullYearView(currentYear);
+    }
+
+    document.getElementById("resetBtn").onclick = resetCalendar;
 
     window.onclick = (event) => {
       const modal = document.getElementById("noteModal");
@@ -736,13 +757,13 @@ function showNoteModal(date) {
         modal.style.display = "none";
       }
     };
-
+  
   window.onclick = (event) => {
-    const modal = document.getElementById("noteModal");
-    if (event.target === modal) {
-      modal.style.display = "none";
-    }
-  };
+      const modal = document.getElementById("noteModal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
 
   document.querySelector(".close").onclick = () => {
     document.getElementById("noteModal").style.display = "none";
@@ -771,8 +792,15 @@ function showNoteModal(date) {
   document.getElementById("prevMonth").onclick = () => navigateMonth(-1);
   document.getElementById("nextMonth").onclick = () => navigateMonth(1);
 
-  generateCalendar(currentMonth, currentYear);
-  generateFullYearView(currentYear);
+      // Load initial values from local storage
+    document.getElementById("daysOff").value = daysOffTotal;
+    document.getElementById("monthlyLeave").value = monthlyLeaveUsed > 0 ? 1 : 0;
+
+    updateDaysOffCounter();
+    updateMonthlyLeaveCounter();
+
+    generateCalendar(currentMonth, currentYear);
+    generateFullYearView(currentYear);
 </script>
 </body>
 </html>
