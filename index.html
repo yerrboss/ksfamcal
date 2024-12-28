@@ -282,6 +282,22 @@
     </style>
   </head>
 <body>
+<!-- Add these forms before the existing calendar HTML -->
+<div id="authContainer">
+  <form id="registerForm">
+    <h2>Register</h2>
+    <input type="text" id="registerUsername" placeholder="Username" required />
+    <input type="password" id="registerPassword" placeholder="Password" required />
+    <button type="submit">Register</button>
+  </form>
+  <form id="loginForm">
+    <h2>Login</h2>
+    <input type="text" id="loginUsername" placeholder="Username" required />
+    <input type="password" id="loginPassword" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+</div>
+
   <div class="calendar-container" id="singleMonthView">
     <div class="header">
       <button id="prevMonth">&lt;</button>
@@ -346,65 +362,65 @@
     "10-9": "한글날",
     "12-25": "크리스마스",
   };
-  
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    let currentMonth = 0;
-    let currentYear = 2025;
-    let notes = JSON.parse(localStorage.getItem('notes')) || {};
-    let daysOffTotal = parseInt(localStorage.getItem('daysOffTotal')) || 0;
-    let daysOffUsed = parseInt(localStorage.getItem('daysOffUsed')) || 0;
-    let monthlyLeaveUsed = parseInt(localStorage.getItem('monthlyLeaveUsed')) || 0;
 
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  let currentMonth = 0;
+  let currentYear = 2025;
+  let notes = JSON.parse(localStorage.getItem('notes')) || {};
+  let daysOffTotal = parseInt(localStorage.getItem('daysOffTotal')) || 0;
+  let daysOffUsed = parseInt(localStorage.getItem('daysOffUsed')) || 0;
+  let monthlyLeaveUsed = parseInt(localStorage.getItem('monthlyLeaveUsed')) || 0;
 
-    function saveData() {
+  function saveData() {
     localStorage.setItem('notes', JSON.stringify(notes));
     localStorage.setItem('daysOffTotal', daysOffTotal);
     localStorage.setItem('daysOffUsed', daysOffUsed);
     localStorage.setItem('monthlyLeaveUsed', monthlyLeaveUsed);
   }
-    function updateDaysOffCounter() {
-      const counter = document.getElementById("daysOffCounter");
-      counter.textContent = `Remaining: ${daysOffTotal - daysOffUsed}`;
-      saveData();
+
+  function updateDaysOffCounter() {
+    const counter = document.getElementById("daysOffCounter");
+    counter.textContent = `Remaining: ${daysOffTotal - daysOffUsed}`;
+    saveData();
+  }
+
+  function updateMonthlyLeaveCounter() {
+    const counter = document.getElementById("monthlyLeaveCounter");
+    counter.textContent = `Remaining: ${1 - monthlyLeaveUsed}`;
+    saveData();
+  }
+
+  document.getElementById("daysOff").addEventListener("change", function () {
+    daysOffTotal = parseInt(this.value);
+    daysOffUsed = 0; // Reset used days off when a new total is input
+    updateDaysOffCounter();
+  });
+
+  document.getElementById("monthlyLeave").addEventListener("change", function () {
+    if (this.value > 1) {
+      this.value = 1;
+      alert("Monthly leave can only be 0 or 1");
     }
+    monthlyLeaveUsed = 0; // Reset used monthly leave when a new total is input
+    updateMonthlyLeaveCounter();
+  });
 
-    function updateMonthlyLeaveCounter() {
-      const counter = document.getElementById("monthlyLeaveCounter");
-      counter.textContent = `Remaining: ${1 - monthlyLeaveUsed}`;
-      saveData();
-    }
-
-    document.getElementById("daysOff").addEventListener("change", function () {
-      daysOffTotal = parseInt(this.value);
-      daysOffUsed = 0; // Reset used days off when a new total is input
-      updateDaysOffCounter();
-    });
-
-    document.getElementById("monthlyLeave").addEventListener("change", function () {
-      if (this.value > 1) {
-        this.value = 1;
-        alert("Monthly leave can only be 0 or 1");
+  function useLeave(date, leaveType) {
+    if (leaveType === "daysOff") {
+      if (daysOffUsed < daysOffTotal) {
+        daysOffUsed++;
+        updateDaysOffCounter();
+        return true;
       }
-      monthlyLeaveUsed = 0; // Reset used monthly leave when a new total is input
-      updateMonthlyLeaveCounter();
-    });
-
-    function useLeave(date, leaveType) {
-      if (leaveType === "daysOff") {
-        if (daysOffUsed < daysOffTotal) {
-          daysOffUsed++;
-          updateDaysOffCounter();
-          return true;
-        }
-      } else if (leaveType === "monthlyLeave") {
-        if (monthlyLeaveUsed < 1) {
-          monthlyLeaveUsed++;
-          updateMonthlyLeaveCounter();
-          return true;
-        }
+    } else if (leaveType === "monthlyLeave") {
+      if (monthlyLeaveUsed < 1) {
+        monthlyLeaveUsed++;
+        updateMonthlyLeaveCounter();
+        return true;
       }
-      return false;
     }
+    return false;
+  }
 
   function generateCalendar(month, year) {
     const monthNames = [
@@ -420,21 +436,6 @@
     calendarGrid.innerHTML = "";
     holidayCaption.innerHTML = "";
     monthYear.textContent = `${monthNames[month]} ${year}`;
-
-    function isDayOff(date) {
-    return notes[date] && notes[date].includes("Day Off");
-    }
-
-    function ismonthlyleaveUsed(date) {
-      return notes[date] && notes[date].includes("monthlyleave Used");
-    }
-
-    document.getElementById("toggleViewBtn").onclick = toggleView;
-    document.getElementById("backToSingleMonth").onclick = () => {
-      toggleView();
-      currentMonth = 0;
-      generateCalendar(currentMonth, currentYear);
-    };
 
     daysOfWeek.forEach((day) => {
       const dayHeader = document.createElement("div");
@@ -594,95 +595,94 @@
     generateCalendar(currentMonth, currentYear);
   };
 
-function showNoteModal(date) {
-  const modal = document.getElementById("noteModal");
-  const modalDate = document.getElementById("modalDate");
-  const notesList = document.getElementById("notesList");
-  const noteText = document.getElementById("noteText");
-  const addNoteBtn = document.getElementById("addNote");
-  const deleteSelectedNotesBtn = document.getElementById("deleteSelectedNotes");
-  const toggleDayOffBtn = document.getElementById("toggleDayOff");
-  const togglemonthlyleaveBtn = document.getElementById("togglemonthlyleave");
+  function showNoteModal(date) {
+    const modal = document.getElementById("noteModal");
+    const modalDate = document.getElementById("modalDate");
+    const notesList = document.getElementById("notesList");
+    const noteText = document.getElementById("noteText");
+    const addNoteBtn = document.getElementById("addNote");
+    const deleteSelectedNotesBtn = document.getElementById("deleteSelectedNotes");
+    const toggleDayOffBtn = document.getElementById("toggleDayOff");
+    const togglemonthlyleaveBtn = document.getElementById("togglemonthlyleave");
 
-  modal.style.display = "block";
-  modalDate.textContent = date;
+    modal.style.display = "block";
+    modalDate.textContent = date;
 
-      addNoteBtn.onclick = () => {
-        if (noteText.value.trim() !== "") {
-          if (!notes[date]) notes[date] = [];
-          notes[date].push(noteText.value);
-          noteText.value = "";
-          updateNotesList(date);
-          generateCalendar(currentMonth, currentYear);
-          generateFullYearView(currentYear);
-          saveData();
-        }
-      };
-
-       deleteSelectedNotesBtn.onclick = () => {
-        const checkboxes = notesList.querySelectorAll('input[type="checkbox"]:checked');
-        checkboxes.forEach(checkbox => {
-          const noteIndex = parseInt(checkbox.dataset.index);
-          notes[date].splice(noteIndex, 1);
-        });
+    addNoteBtn.onclick = () => {
+      if (noteText.value.trim() !== "") {
+        if (!notes[date]) notes[date] = [];
+        notes[date].push(noteText.value);
+        noteText.value = "";
         updateNotesList(date);
         generateCalendar(currentMonth, currentYear);
         generateFullYearView(currentYear);
         saveData();
-      };
-
-      toggleDayOffBtn.textContent = isDayOff(date) ? "Cancel Day Off" : "Mark as Day Off";
-      toggleDayOffBtn.onclick = () => {
-        if (isDayOff(date)) {
-          notes[date] = notes[date].filter(note => note !== "Day Off");
-          daysOffUsed--;
-        } else {
-          if (!notes[date]) notes[date] = [];
-          notes[date].push("Day Off");
-          daysOffUsed++;
-        }
-        updateDaysOffCounter();
-        updateCalendarDay(date);
-        generateCalendar(currentMonth, currentYear);
-        generateFullYearView(currentYear);
-        saveData();
-      };
-
-      togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel Monthly Leave" : "Use Monthly Leave";
-      togglemonthlyleaveBtn.onclick = () => {
-        if (ismonthlyleaveUsed(date)) {
-          notes[date] = notes[date].filter(note => note !== "Monthly Leave Used");
-          monthlyLeaveUsed--;
-        } else {
-          if (!notes[date]) notes[date] = [];
-          notes[date].push("Monthly Leave Used");
-          monthlyLeaveUsed++;
-        }
-        updateMonthlyLeaveCounter();
-        updateCalendarDay(date);
-        generateCalendar(currentMonth, currentYear);
-        generateFullYearView(currentYear);
-        saveData();
-      };
-
-
-  updateNotesList(date);
-}
-
-    function updateNotesList(date) {
-      const notesList = document.getElementById("notesList");
-      notesList.innerHTML = "";
-      if (notes[date]) {
-        notes[date].forEach((note, index) => {
-          const noteDiv = document.createElement("div");
-          noteDiv.innerHTML = `
-            <input type="checkbox" data-index="${index}"/>
-            <span>${note}</span>
-          `;
-          notesList.appendChild(noteDiv);
-        });
       }
+    };
+
+    deleteSelectedNotesBtn.onclick = () => {
+      const checkboxes = notesList.querySelectorAll('input[type="checkbox"]:checked');
+      checkboxes.forEach(checkbox => {
+        const noteIndex = parseInt(checkbox.dataset.index);
+        notes[date].splice(noteIndex, 1);
+      });
+      updateNotesList(date);
+      generateCalendar(currentMonth, currentYear);
+      generateFullYearView(currentYear);
+      saveData();
+    };
+
+    toggleDayOffBtn.textContent = isDayOff(date) ? "Cancel Day Off" : "Mark as Day Off";
+    toggleDayOffBtn.onclick = () => {
+      if (isDayOff(date)) {
+        notes[date] = notes[date].filter(note => note !== "Day Off");
+        daysOffUsed--;
+      } else {
+        if (!notes[date]) notes[date] = [];
+        notes[date].push("Day Off");
+        daysOffUsed++;
+      }
+      updateDaysOffCounter();
+      updateCalendarDay(date);
+      generateCalendar(currentMonth, currentYear);
+      generateFullYearView(currentYear);
+      saveData();
+    };
+
+    togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel Monthly Leave" : "Use Monthly Leave";
+    togglemonthlyleaveBtn.onclick = () => {
+      if (ismonthlyleaveUsed(date)) {
+        notes[date] = notes[date].filter(note => note !== "Monthly Leave Used");
+        monthlyLeaveUsed--;
+      } else {
+        if (!notes[date]) notes[date] = [];
+        notes[date].push("Monthly Leave Used");
+        monthlyLeaveUsed++;
+      }
+      updateMonthlyLeaveCounter();
+      updateCalendarDay(date);
+      generateCalendar(currentMonth, currentYear);
+      generateFullYearView(currentYear);
+      saveData();
+    };
+
+    updateNotesList(date);
+  }
+
+  function updateNotesList(date) {
+    const notesList = document.getElementById("notesList");
+    notesList.innerHTML = "";
+    if (notes[date]) {
+      notes[date].forEach((note, index) => {
+        const noteDiv = document.createElement("div");
+        noteDiv.innerHTML = `
+          <input type="checkbox" data-index="${index}"/>
+          <span>${note}</span>
+        `;
+        notesList.appendChild(noteDiv);
+      });
     }
+  }
 
   function updateCalendarDay(date) {
     const [month, day, year] = date.split("-");
@@ -733,37 +733,30 @@ function showNoteModal(date) {
       updateNotesList(date);
     }
   }
-    
-      function resetCalendar() {
-      notes = {};
-      daysOffTotal = 0;
-      daysOffUsed = 0;
-      monthlyLeaveUsed = 0;
-      saveData();
 
-      document.getElementById("daysOff").value = daysOffTotal;
-      document.getElementById("monthlyLeave").value = monthlyLeaveUsed;
-      updateDaysOffCounter();
-      updateMonthlyLeaveCounter();
-      generateCalendar(currentMonth, currentYear);
-      generateFullYearView(currentYear);
-    }
+  function resetCalendar() {
+    notes = {};
+    daysOffTotal = 0;
+    daysOffUsed = 0;
+    monthlyLeaveUsed = 0;
+    saveData();
 
-    document.getElementById("resetBtn").onclick = resetCalendar;
+    document.getElementById("daysOff").value = daysOffTotal;
+    document.getElementById("monthlyLeave").value = monthlyLeaveUsed;
+    updateDaysOffCounter();
+    updateMonthlyLeaveCounter();
+    generateCalendar(currentMonth, currentYear);
+    generateFullYearView(currentYear);
+  }
 
-    window.onclick = (event) => {
-      const modal = document.getElementById("noteModal");
-      if (event.target === modal) {
-        modal.style.display = "none";
-      }
-    };
-  
+  document.getElementById("resetBtn").onclick = resetCalendar;
+
   window.onclick = (event) => {
-      const modal = document.getElementById("noteModal");
-      if (event.target === modal) {
-        modal.style.display = "none";
-      }
-    };
+    const modal = document.getElementById("noteModal");
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  };
 
   document.querySelector(".close").onclick = () => {
     document.getElementById("noteModal").style.display = "none";
@@ -792,15 +785,15 @@ function showNoteModal(date) {
   document.getElementById("prevMonth").onclick = () => navigateMonth(-1);
   document.getElementById("nextMonth").onclick = () => navigateMonth(1);
 
-      // Load initial values from local storage
-    document.getElementById("daysOff").value = daysOffTotal;
-    document.getElementById("monthlyLeave").value = monthlyLeaveUsed > 0 ? 1 : 0;
+  // Load initial values from local storage
+  document.getElementById("daysOff").value = daysOffTotal;
+  document.getElementById("monthlyLeave").value = monthlyLeaveUsed > 0 ? 1 : 0;
 
-    updateDaysOffCounter();
-    updateMonthlyLeaveCounter();
+  updateDaysOffCounter();
+  updateMonthlyLeaveCounter();
 
-    generateCalendar(currentMonth, currentYear);
-    generateFullYearView(currentYear);
+  generateCalendar(currentMonth, currentYear);
+  generateFullYearView(currentYear);
 </script>
 </body>
 </html>
