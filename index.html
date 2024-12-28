@@ -130,7 +130,7 @@
       }
       #daysOffInput,
       #remainingDays,
-      #월차Input {
+      #monthlyleaveInput {
         margin: 10px;
         padding: 10px;
         font-size: 16px;
@@ -213,10 +213,20 @@
         background-color: orange !important;
         color: white;
       }
-      .color-월차 {
+      .color-monthlyleave {
         background-color: rgb(76, 143, 182) !important;
         color: white;
       }
+
+      .calendar-grid .color-연차 {
+        background-color: orange !important;
+        color: white;
+      }
+      .calendar-grid .color-monthlyleave {
+        background-color: rgb(76, 143, 182) !important;
+        color: white;
+      }
+
       .close {
         color: #aaa;
         float: right;
@@ -240,8 +250,8 @@
       }
       #addNote,
       #deleteNote,
-      #use월차,
-      #cancel월차 {
+      #usemonthlyleave,
+      #cancelmonthlyleave {
         margin-top: 10px;
         margin-right: 10px;
       }
@@ -260,576 +270,465 @@
       }
     </style>
   </head>
-  <body>
-    <div class="calendar-container" id="singleMonthView">
-      <div class="header">
-        <button id="prevMonth">&lt;</button>
-        <div id="monthYear">January 2025</div>
-        <button id="nextMonth">&gt;</button>
-        <button id="toggleViewBtn">Show Full Year</button>
-      </div>
-      <div class="calendar-grid" id="calendarGrid">
-        <!-- Calendar days will be inserted here -->
-      </div>
-      <div class="caption" id="holidayCaption"></div>
+<body>
+  <div class="calendar-container" id="singleMonthView">
+    <div class="header">
+      <button id="prevMonth">&lt;</button>
+      <div id="monthYear">January 2025</div>
+      <button id="nextMonth">&gt;</button>
+      <button id="toggleViewBtn">Show Full Year</button>
     </div>
-    <button id="backToSingleMonth" style="display: none">
-      Back to Single Month
-    </button>
-    <div class="full-view" id="fullYearView" style="display: none">
-      <!-- Full Year Calendar Grid -->
+    <div class="calendar-grid" id="calendarGrid">
+      <!-- Calendar days will be inserted here -->
     </div>
-    <div id="noteModal" class="modal">
-      <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2 id="modalDate"></h2>
-        <div id="notesList"></div>
-        <textarea id="noteText" rows="4" cols="50"></textarea>
-        <button id="addNote">Add Note</button>
-        <button id="deleteNote">Delete Selected</button>
-        <button id="toggleDayOff">Mark as Day Off</button>
-        <button id="toggle월차">Use 월차</button>
-      </div>
+    <div class="caption" id="holidayCaption"></div>
+  </div>
+  <button id="backToSingleMonth" style="display: none">
+    Back to Single Month
+  </button>
+  <div class="full-view" id="fullYearView" style="display: none">
+    <!-- Full Year Calendar Grid -->
+  </div>
+  <div id="noteModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalDate"></h2>
+      <div id="notesList"></div>
+      <textarea id="noteText" rows="4" cols="50"></textarea>
+      <button id="toggleNote">Add/Delete Notes</button>
+      <button id="toggleDayOff">Mark as Day Off</button>
+      <button id="togglemonthlyleave">Use Monthly Leave</button>
     </div>
+  </div>
 
-    <div class="input-container">
-      <label for="daysOff">Days Off:</label>
-      <input type="number" id="daysOff" min="0" value="0" />
-      <div id="daysOffCounter">Remaining: 0</div>
-    </div>
-    <div class="input-container">
-      <label for="monthlyLeave">월차 (0-1):</label>
-      <input
-        type="number"
-        id="monthlyLeave"
-        min="0"
-        max="1"
-        step="1"
-        value="0"
-      />
-      <div id="monthlyLeaveCounter">Remaining: 0</div>
-    </div>
-    <script>
-      const holidays2025 = {
-        "1-1": "설날",
-        "1-28": "설날",
-        "1-29": "설날",
-        "1-30": "설날",
-        "3-3": "대체휴일",
-        "5-1": "근로자의 날",
-        "5-5": "어린이날",
-        "5-6": "대체휴일",
-        "6-6": "헌충일",
-        "8-15": "광복절",
-        "10-3": "개천절",
-        "10-6": "추석",
-        "10-7": "추석",
-        "10-8": "대체휴일",
-        "10-9": "한글날",
-        "12-25": "크리스마스",
-      };
-      const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      let currentMonth = 0;
-      let currentYear = 2025;
-      let notes = {};
-      let daysOffTotal = 0;
-      let daysOffUsed = 0;
-      let monthlyLeaveUsed = 0;
+  <div class="input-container">
+    <label for="daysOff">Days Off:</label>
+    <input type="number" id="daysOff" min="0" value="0" />
+    <div id="daysOffCounter">Remaining: 0</div>
+  </div>
+  <div class="input-container">
+    <label for="monthlyLeave">Monthly Leave (0-1):</label>
+    <input
+      type="number"
+      id="monthlyLeave"
+      min="0"
+      max="1"
+      step="1"
+      value="0"
+    />
+    <div id="monthlyLeaveCounter">Remaining: 0</div>
+  </div>
 
-      function updateDaysOffCounter() {
-        const counter = document.getElementById("daysOffCounter");
-        counter.textContent = `Remaining: ${daysOffTotal - daysOffUsed}`;
+<script>
+  const holidays2025 = {
+    "1-1": "설날",
+    "1-28": "설날",
+    "1-29": "설날",
+    "1-30": "설날",
+    "3-3": "대체휴일",
+    "5-1": "근로자의 날",
+    "5-5": "어린이날",
+    "5-6": "대체휴일",
+    "6-6": "헌충일",
+    "8-15": "광복절",
+    "10-3": "개천절",
+    "10-6": "추석",
+    "10-7": "추석",
+    "10-8": "대체휴일",
+    "10-9": "한글날",
+    "12-25": "크리스마스",
+  };
+  
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  let currentMonth = 0;
+  let currentYear = 2025;
+  let notes = {};
+  let daysOffTotal = 0;
+  let daysOffUsed = 0;
+  let monthlyLeaveUsed = 0;
+
+  function updateDaysOffCounter() {
+    const counter = document.getElementById("daysOffCounter");
+    counter.textContent = `Remaining: ${daysOffTotal - daysOffUsed}`;
+  }
+
+  function updateMonthlyLeaveCounter() {
+    const counter = document.getElementById("monthlyLeaveCounter");
+    counter.textContent = `Remaining: ${1 - monthlyLeaveUsed}`;
+  }
+
+  document.getElementById("daysOff").addEventListener("change", function () {
+    daysOffTotal = parseInt(this.value);
+    updateDaysOffCounter();
+  });
+
+  document.getElementById("monthlyLeave").addEventListener("change", function () {
+    if (this.value > 1) {
+      this.value = 1;
+      alert("monthlyleave can only be 0 or 1");
+    }
+    monthlyLeaveUsed = 0;
+    updateMonthlyLeaveCounter();
+  });
+
+  function useLeave(date, leaveType) {
+    if (leaveType === "daysOff") {
+      if (daysOffUsed < daysOffTotal) {
+        daysOffUsed++;
+        updateDaysOffCounter();
+        return true;
+      }
+    } else if (leaveType === "monthlyLeave") {
+      if (monthlyLeaveUsed < 1) {
+        monthlyLeaveUsed++;
+        updateMonthlyLeaveCounter();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function generateCalendar(month, year) {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const calendarGrid = document.getElementById("calendarGrid");
+    const monthYear = document.getElementById("monthYear");
+    const holidayCaption = document.getElementById("holidayCaption");
+
+    calendarGrid.innerHTML = "";
+    holidayCaption.innerHTML = "";
+    monthYear.textContent = `${monthNames[month]} ${year}`;
+
+    daysOfWeek.forEach((day) => {
+      const dayHeader = document.createElement("div");
+      dayHeader.textContent = day;
+      dayHeader.classList.add("day-header");
+      calendarGrid.appendChild(dayHeader);
+    });
+
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      const emptyDiv = document.createElement("div");
+      calendarGrid.appendChild(emptyDiv);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayButton = document.createElement("div");
+      const dateString = `${month + 1}-${day}-${year}`;
+      const isWeekend =
+        (firstDayOfMonth + day - 1) % 7 === 0 ||
+        (firstDayOfMonth + day - 1) % 7 === 6;
+      const isHoliday = holidays2025[`${month + 1}-${day}`];
+
+      dayButton.textContent = day;
+      dayButton.classList.add("day");
+      if (isWeekend) {
+        dayButton.classList.add("weekend");
+      }
+      if (isHoliday) {
+        dayButton.classList.add("holiday");
+      }
+      if (notes[dateString] && notes[dateString].length > 0) {
+        dayButton.classList.add("has-note");
       }
 
-      function updateMonthlyLeaveCounter() {
-        const counter = document.getElementById("monthlyLeaveCounter");
-        counter.textContent = `Remaining: ${1 - monthlyLeaveUsed}`;
-      }
-
-      document
-        .getElementById("daysOff")
-        .addEventListener("change", function () {
-          daysOffTotal = parseInt(this.value);
-          updateDaysOffCounter();
-        });
-
-      document
-        .getElementById("monthlyLeave")
-        .addEventListener("change", function () {
-          if (this.value > 1) {
-            this.value = 1;
-            alert("월차 can only be 0 or 1");
-          }
-          monthlyLeaveUsed = 0;
-          updateMonthlyLeaveCounter();
-        });
-
-      function useLeave(date, leaveType) {
-        if (leaveType === "daysOff") {
-          if (daysOffUsed < daysOffTotal) {
-            daysOffUsed++;
-            updateDaysOffCounter();
-            return true;
-          }
-        } else if (leaveType === "monthlyLeave") {
-          if (monthlyLeaveUsed < 1) {
-            monthlyLeaveUsed++;
-            updateMonthlyLeaveCounter();
-            return true;
-          }
-        }
-        return false;
-      }
-
-      function generateCalendar(month, year) {
-        const monthNames = [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
-        ];
-        const firstDayOfMonth = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const calendarGrid = document.getElementById("calendarGrid");
-        const monthYear = document.getElementById("monthYear");
-        const holidayCaption = document.getElementById("holidayCaption");
-
-        calendarGrid.innerHTML = "";
-        holidayCaption.innerHTML = "";
-        monthYear.textContent = `${monthNames[month]} ${year}`;
-
-        daysOfWeek.forEach((day) => {
-          const dayHeader = document.createElement("div");
-          dayHeader.textContent = day;
-          dayHeader.classList.add("day-header");
-          calendarGrid.appendChild(dayHeader);
-        });
-
-        for (let i = 0; i < firstDayOfMonth; i++) {
-          const emptyDiv = document.createElement("div");
-          calendarGrid.appendChild(emptyDiv);
-        }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          const dayButton = document.createElement("div");
-          const dateString = `${month + 1}-${day}-${year}`;
-          const isWeekend =
-            (firstDayOfMonth + day - 1) % 7 === 0 ||
-            (firstDayOfMonth + day - 1) % 7 === 6;
-          const isHoliday = holidays2025[`${month + 1}-${day}`];
-
-          dayButton.textContent = day;
-          dayButton.classList.add("day");
-          if (isWeekend) {
-            dayButton.classList.add("weekend");
-          }
-          if (isHoliday) {
-            dayButton.classList.add("holiday");
-          }
-          if (notes[dateString] && notes[dateString].length > 0) {
-            dayButton.classList.add("has-note");
-          }
-
-
-          
-          dayButton.onclick = () => {
-            showNoteModal(dateString);
-            if (isHoliday) {
-              holidayCaption.textContent = `Holiday: ${
-                holidays2025[`${month + 1}-${day}`]
-              } (${month + 1}-${day})`;
-            } else {
-              holidayCaption.textContent = "";
-            }
-          };
-
-          calendarGrid.appendChild(dayButton);
-        }
-      }
-
-      function generateFullYearView(year) {
-        const fullYearView = document.getElementById("fullYearView");
-        fullYearView.innerHTML = "";
-        const monthNames = [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
-        ];
-
-        monthNames.forEach((monthName, index) => {
-          const monthDiv = document.createElement("div");
-          monthDiv.classList.add("month-container");
-          const monthTitle = document.createElement("h4");
-          monthTitle.textContent = `${monthName} ${year}`;
-          monthDiv.appendChild(monthTitle);
-
-          const monthGrid = document.createElement("div");
-          monthGrid.classList.add("calendar-grid");
-
-          const firstDayOfMonth = new Date(year, index, 1).getDay();
-          const daysInMonth = new Date(year, index + 1, 0).getDate();
-
-          // Add day headers
-          daysOfWeek.forEach((day) => {
-            const dayHeader = document.createElement("div");
-            dayHeader.textContent = day;
-            dayHeader.classList.add("day-header");
-            monthGrid.appendChild(dayHeader);
-          });
-
-          // Add empty cells for days before the 1st of the month
-          for (let i = 0; i < firstDayOfMonth; i++) {
-            const emptyDiv = document.createElement("div");
-            monthGrid.appendChild(emptyDiv);
-          }
-
-          // Add days of the month
-          for (let day = 1; day <= daysInMonth; day++) {
-            const dayButton = document.createElement("div");
-            const dateString = `${index + 1}-${day}-${year}`;
-            dayButton.textContent = day;
-            dayButton.classList.add("day");
-
-            const isWeekend =
-              (firstDayOfMonth + day - 1) % 7 === 0 ||
-              (firstDayOfMonth + day - 1) % 7 === 6;
-            const isHoliday = holidays2025[`${index + 1}-${day}`];
-
-            if (isWeekend) dayButton.classList.add("weekend");
-            if (isHoliday) dayButton.classList.add("holiday");
-            if (notes[dateString] && notes[dateString].length > 0) {
-              dayButton.classList.add("has-note");
-            }
-
-            // Add color coding for days off
-            if (isDayOff(dateString)) {
-              dayButton.classList.add("color-연차");
-            } else if (is월차Used(dateString)) {
-              dayButton.classList.add("color-월차");
-            }
-
-            dayButton.onclick = () => {
-              showNoteModal(dateString);
-            };
-
-            monthGrid.appendChild(dayButton);
-          }
-
-          const monthCaption = document.createElement("div");
-          monthCaption.classList.add("caption");
-          monthDiv.appendChild(monthGrid);
-          monthDiv.appendChild(monthCaption);
-          fullYearView.appendChild(monthDiv);
-        });
-      }
-
-      function isDayOff(date) {
-        const dayElement = getDayElement(date);
-        return dayElement && dayElement.classList.contains("color-연차");
-      }
-
-      function is월차Used(date) {
-        const dayElement = getDayElement(date);
-        return dayElement && dayElement.classList.contains("color-월차");
-      }
-
-      function getDayElement(date) {
-        const [month, day, year] = date.split("-");
-        const calendarGrid =
-          document.querySelectorAll(".calendar-grid")[month - 1];
-        const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-        const dayIndex = parseInt(day) + firstDayOfMonth + 7; // Add 7 for headers
-        return calendarGrid?.querySelector(`.day:nth-child(${dayIndex})`);
-      }
-
-      function toggleView() {
-        const singleMonthView = document.getElementById("singleMonthView");
-        const fullYearView = document.getElementById("fullYearView");
-        const toggleViewBtn = document.getElementById("toggleViewBtn");
-        const backToSingleMonth = document.getElementById("backToSingleMonth");
-
-        if (singleMonthView.style.display !== "none") {
-          singleMonthView.style.display = "none";
-          fullYearView.style.display = "grid";
-          toggleViewBtn.textContent = "Show Single Month";
-          backToSingleMonth.style.display = "block";
+      dayButton.onclick = () => {
+        showNoteModal(dateString);
+        if (isHoliday) {
+          holidayCaption.textContent = `Holiday: ${
+            holidays2025[`${month + 1}-${day}`]
+          } (${month + 1}-${day})`;
         } else {
-          singleMonthView.style.display = "block";
-          fullYearView.style.display = "none";
-          toggleViewBtn.textContent = "Show Full Year";
-          backToSingleMonth.style.display = "none";
-        }
-      }
-
-      document.getElementById("toggleViewBtn").onclick = toggleView;
-      document.getElementById("backToSingleMonth").onclick = () => {
-        toggleView();
-        currentMonth = 0;
-        generateCalendar(currentMonth, currentYear);
-      };
-
-      function showNoteModal(date) {
-        const modal = document.getElementById("noteModal");
-        const modalDate = document.getElementById("modalDate");
-        const notesList = document.getElementById("notesList");
-        const noteText = document.getElementById("noteText");
-        const toggleDayOffBtn = document.getElementById("toggleDayOff");
-        const toggle월차Btn = document.getElementById("toggle월차");
-
-        modal.style.display = "block";
-        modalDate.textContent = date;
-
-        function isDayOff(date) {
-          const dayElement = getDayElement(date);
-          return dayElement && dayElement.classList.contains("color-연차");
-        }
-
-        function is월차Used(date) {
-          const dayElement = getDayElement(date);
-          return dayElement && dayElement.classList.contains("color-월차");
-        }
-
-        function toggleDayOff(date) {
-          if (isDayOff(date)) {
-            cancelDayOff(date);
-          } else {
-            if (useLeave(date, "daysOff")) {
-              updateCalendarDay(date, "color-연차");
-            }
-          }
-          showNoteModal(date); // Refresh modal
-        }
-
-        function toggle월차(date) {
-          if (is월차Used(date)) {
-            cancel월차(date);
-          } else {
-            if (useLeave(date, "monthlyLeave")) {
-              updateCalendarDay(date, "color-월차");
-            }
-          }
-          showNoteModal(date); // Refresh modal
-        }
-
-        function cancelDayOff(date) {
-          const dayElement = getDayElement(date);
-          if (dayElement) {
-            dayElement.classList.remove("color-연차");
-            daysOffUsed--;
-            updateDaysOffCounter();
-          }
-        }
-
-        function cancel월차(date) {
-          const dayElement = getDayElement(date);
-          if (dayElement) {
-            dayElement.classList.remove("color-월차");
-            monthlyLeaveUsed--;
-            updateMonthlyLeaveCounter();
-          }
-        }
-
-        function getDayElement(date) {
-          const [month, day, year] = date.split("-");
-          const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-          const dayIndex = parseInt(day) + firstDayOfMonth + 7; // Add 7 to account for the day headers
-          return document.querySelector(
-            `.calendar-grid .day:nth-child(${dayIndex})`
-          );
-        }
-
-        function updateCalendarDay(date, className) {
-          const dayElement = getDayElement(date);
-          if (dayElement) {
-            dayElement.classList.add(className);
-          }
-        }
-        updateNotesList(date);
-
-        // Set up toggle functionality for Day Off button
-        toggleDayOffBtn.textContent = isDayOff(date)
-          ? "Cancel Day Off"
-          : "Mark as Day Off";
-        toggleDayOffBtn.onclick = () => {
-          if (isDayOff(date)) {
-            cancelDayOff(date);
-            toggleDayOffBtn.textContent = "Mark as Day Off";
-          } else {
-            if (useLeave(date, "daysOff")) {
-              updateCalendarDay(date, "color-연차");
-              toggleDayOffBtn.textContent = "Cancel Day Off";
-            }
-          }
-        };
-
-        // Set up toggle functionality for 월차 button
-        toggle월차Btn.textContent = is월차Used(date)
-          ? "Cancel 월차"
-          : "Use 월차";
-        toggle월차Btn.onclick = () => {
-          if (is월차Used(date)) {
-            cancel월차(date);
-            toggle월차Btn.textContent = "Use 월차";
-          } else {
-            if (useLeave(date, "monthlyLeave")) {
-              updateCalendarDay(date, "color-월차");
-              toggle월차Btn.textContent = "Cancel 월차";
-            }
-          }
-        };
-
-        // Existing note functionality
-        document.getElementById("addNote").onclick = () => {
-          if (noteText.value.trim() !== "") {
-            if (!notes[date]) notes[date] = [];
-            notes[date].push(noteText.value);
-            noteText.value = "";
-            updateNotesList(date);
-          }
-        };
-
-        document.getElementById("deleteNote").onclick = () => {
-          notes[date] = [];
-          updateNotesList(date);
-        };
-      }
-
-      function updateNotesList(date) {
-        const notesList = document.getElementById("notesList");
-        notesList.innerHTML = "";
-        if (notes[date]) {
-          notes[date].forEach((note) => {
-            const noteDiv = document.createElement("div");
-            noteDiv.textContent = note;
-            notesList.appendChild(noteDiv);
-          });
-        }
-      }
-
-      function updateCalendarDay(date, className) {
-        const [month, day, year] = date.split("-");
-        const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-        const calendarDay = document.querySelector(
-          `.day:not(.day-header):nth-child(${
-            parseInt(day) + firstDayOfMonth + 7
-          })`
-        );
-        if (calendarDay) {
-          calendarDay.classList.add(className);
-        }
-      }
-
-      function cancelLeave(date) {
-        const [month, day, year] = date.split("-");
-        const calendarDay = document.querySelector(
-          `.day:not(.day-header):nth-child(${
-            parseInt(day) + new Date(year, month - 1, 1).getDay()
-          })`
-        );
-
-        if (calendarDay) {
-          if (calendarDay.classList.contains("color-연차")) {
-            calendarDay.classList.remove("color-연차");
-            daysOffUsed--;
-            updateDaysOffCounter();
-          } else if (calendarDay.classList.contains("color-월차")) {
-            calendarDay.classList.remove("color-월차");
-            monthlyLeaveUsed--;
-            updateMonthlyLeaveCounter();
-          }
-
-          // Remove any leave-related classes
-          calendarDay.classList.remove("color-연차", "color-월차");
-
-          // Restore original background color
-          if (calendarDay.classList.contains("weekend")) {
-            calendarDay.style.backgroundColor = "";
-          } else if (holidays2025[`${month}-${day}`]) {
-            calendarDay.classList.add("holiday");
-          } else {
-            calendarDay.style.backgroundColor = "";
-          }
-        }
-
-        // Clear any notes for this date
-        if (notes[date]) {
-          notes[date] = [];
-          updateNotesList(date);
-        }
-      }
-      function cancelLeave(date) {
-        const [month, day, year] = date.split("-");
-        const calendarDay = document.querySelector(
-          `.day:not(.day-header):nth-child(${
-            parseInt(day) + new Date(year, month - 1, 1).getDay()
-          })`
-        );
-
-        if (calendarDay) {
-          if (calendarDay.classList.contains("color-연차")) {
-            daysOffUsed--;
-            updateDaysOffCounter();
-          } else if (calendarDay.classList.contains("color-월차")) {
-            monthlyLeaveUsed--;
-            updateMonthlyLeaveCounter();
-          }
-
-          calendarDay.classList.remove("color-연차", "color-월차");
-        }
-      }
-      window.onclick = (event) => {
-        const modal = document.getElementById("noteModal");
-        if (event.target === modal) {
-          modal.style.display = "none";
+          holidayCaption.textContent = "";
         }
       };
 
-      document.querySelector(".close").onclick = () => {
-        document.getElementById("noteModal").style.display = "none";
-      };
+      calendarGrid.appendChild(dayButton);
+    }
+  }
 
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowLeft") {
-          navigateMonth(-1);
-        } else if (e.key === "ArrowRight") {
-          navigateMonth(1);
-        }
+  function generateFullYearView(year) {
+    const fullYearView = document.getElementById("fullYearView");
+    fullYearView.innerHTML = "";
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    monthNames.forEach((monthName, index) => {
+      const monthDiv = document.createElement("div");
+      monthDiv.classList.add("month-container");
+      const monthTitle = document.createElement("h4");
+      monthTitle.textContent = `${monthName} ${year}`;
+      monthDiv.appendChild(monthTitle);
+
+      const monthGrid = document.createElement("div");
+      monthGrid.classList.add("calendar-grid");
+
+      const firstDayOfMonth = new Date(year, index, 1).getDay();
+      const daysInMonth = new Date(year, index + 1, 0).getDate();
+
+      daysOfWeek.forEach((day) => {
+        const dayHeader = document.createElement("div");
+        dayHeader.textContent = day;
+        dayHeader.classList.add("day-header");
+        monthGrid.appendChild(dayHeader);
       });
 
-      function navigateMonth(direction) {
-        currentMonth += direction;
-        if (currentMonth < 0) {
-          currentMonth = 11;
-          currentYear--;
-        } else if (currentMonth > 11) {
-          currentMonth = 0;
-          currentYear++;
-        }
-        generateCalendar(currentMonth, currentYear);
+      for (let i = 0; i < firstDayOfMonth; i++) {
+        const emptyDiv = document.createElement("div");
+        monthGrid.appendChild(emptyDiv);
       }
 
-      document.getElementById("prevMonth").onclick = () => navigateMonth(-1);
-      document.getElementById("nextMonth").onclick = () => navigateMonth(1);
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayButton = document.createElement("div");
+        const dateString = `${index + 1}-${day}-${year}`;
+        dayButton.textContent = day;
+        dayButton.classList.add("day");
 
-      generateCalendar(currentMonth, currentYear);
-      generateFullYearView(currentYear);
-    </script>
-  </body>
+        const isWeekend =
+          (firstDayOfMonth + day - 1) % 7 === 0 ||
+          (firstDayOfMonth + day - 1) % 7 === 6;
+        const isHoliday = holidays2025[`${index + 1}-${day}`];
+
+        if (isWeekend) dayButton.classList.add("weekend");
+        if (isHoliday) dayButton.classList.add("holiday");
+        if (notes[dateString] && notes[dateString].length > 0) {
+          dayButton.classList.add("has-note");
+        }
+
+        if (isDayOff(dateString)) {
+          dayButton.classList.add("color-연차");
+        } else if (ismonthlyleaveUsed(dateString)) {
+          dayButton.classList.add("color-monthlyleave");
+        }
+
+        dayButton.onclick = () => {
+          showNoteModal(dateString);
+        };
+
+        monthGrid.appendChild(dayButton);
+      }
+
+      monthDiv.appendChild(monthGrid);
+      fullYearView.appendChild(monthDiv);
+    });
+  }
+
+  function isDayOff(date) {
+    return notes[date] && notes[date].includes("Day Off");
+  }
+
+  function ismonthlyleaveUsed(date) {
+    return notes[date] && notes[date].includes("monthlyleave Used");
+  }
+
+  function getDayElement(date) {
+    const [month, day, year] = date.split("-");
+    const calendarGrid = document.querySelectorAll(".calendar-grid")[month - 1];
+    const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+    const dayIndex = parseInt(day) + firstDayOfMonth + 7; // Add 7 for headers
+    return calendarGrid?.querySelector(`.day:nth-child(${dayIndex})`);
+  }
+
+  function toggleView() {
+    const singleMonthView = document.getElementById("singleMonthView");
+    const fullYearView = document.getElementById("fullYearView");
+    const toggleViewBtn = document.getElementById("toggleViewBtn");
+    const backToSingleMonth = document.getElementById("backToSingleMonth");
+
+    if (singleMonthView.style.display !== "none") {
+      singleMonthView.style.display = "none";
+      fullYearView.style.display = "grid";
+      toggleViewBtn.textContent = "Show Single Month";
+      backToSingleMonth.style.display = "block";
+      generateFullYearView(currentYear); // Regenerate full year view
+    } else {
+      singleMonthView.style.display = "block";
+      fullYearView.style.display = "none";
+      toggleViewBtn.textContent = "Show Full Year";
+      backToSingleMonth.style.display = "none";
+    }
+  }
+
+  document.getElementById("toggleViewBtn").onclick = toggleView;
+  document.getElementById("backToSingleMonth").onclick = () => {
+    toggleView();
+    currentMonth = 0;
+    generateCalendar(currentMonth, currentYear);
+  };
+
+  function showNoteModal(date) {
+    const modal = document.getElementById("noteModal");
+    const modalDate = document.getElementById("modalDate");
+    const notesList = document.getElementById("notesList");
+    const noteText = document.getElementById("noteText");
+    const toggleNoteBtn = document.getElementById("toggleNote");
+    const toggleDayOffBtn = document.getElementById("toggleDayOff");
+    const togglemonthlyleaveBtn = document.getElementById("togglemonthlyleave");
+
+    modal.style.display = "block";
+    modalDate.textContent = date;
+
+    function toggleNote() {
+      if (notes[date] && notes[date].length > 0) {
+        // Delete note
+        notes[date] = [];
+      } else {
+        // Add note
+        if (noteText.value.trim() !== "") {
+          if (!notes[date]) notes[date] = [];
+          notes[date].push(noteText.value);
+          noteText.value = "";
+        }
+      }
+      updateNotesList(date);
+      generateCalendar(currentMonth, currentYear); // Update single month view
+      generateFullYearView(currentYear); // Update full year view
+    }
+
+    toggleNoteBtn.textContent = notes[date] && notes[date].length > 0 ? "Delete Notes" : "Add Notes";
+    toggleNoteBtn.onclick = () => {
+      toggleNote();
+      toggleNoteBtn.textContent = notes[date] && notes[date].length > 0 ? "Delete Notes" : "Add Notes";
+    };
+
+    toggleDayOffBtn.textContent = isDayOff(date) ? "Cancel Day Off" : "Mark as Day Off";
+    toggleDayOffBtn.onclick = () => {
+      if (isDayOff(date)) {
+        notes[date] = notes[date].filter(note => note !== "Day Off");
+        daysOffUsed--;
+      } else {
+        if (!notes[date]) notes[date] = [];
+        notes[date].push("Day Off");
+        daysOffUsed++;
+      }
+      updateDaysOffCounter();
+      updateCalendarDay(date);
+      generateCalendar(currentMonth, currentYear); // Update single month view
+      generateFullYearView(currentYear); // Update full year view
+    };
+
+    togglemonthlyleaveBtn.textContent = ismonthlyleaveUsed(date) ? "Cancel monthlyleave" : "Use monthlyleave";
+    togglemonthlyleaveBtn.onclick = () => {
+      if (ismonthlyleaveUsed(date)) {
+        notes[date] = notes[date].filter(note => note !== "monthlyleave Used");
+        monthlyLeaveUsed--;
+      } else {
+        if (!notes[date]) notes[date] = [];
+        notes[date].push("monthlyleave Used");
+        monthlyLeaveUsed++;
+      }
+      updateMonthlyLeaveCounter();
+      updateCalendarDay(date);
+      generateCalendar(currentMonth, currentYear); // Update single month view
+      generateFullYearView(currentYear); // Update full year view
+    };
+
+    updateNotesList(date);
+  }
+
+  function updateNotesList(date) {
+    const notesList = document.getElementById("notesList");
+    notesList.innerHTML = "";
+    if (notes[date]) {
+      notes[date].forEach(note => {
+        const noteDiv = document.createElement("div");
+        noteDiv.textContent = note;
+        notesList.appendChild(noteDiv);
+      });
+    }
+  }
+
+  function updateCalendarDay(date) {
+    const [month, day, year] = date.split("-");
+    const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+    const calendarDay = document.querySelector(
+      `.day:not(.day-header):nth-child(${parseInt(day) + firstDayOfMonth + 7})`
+    );
+    if (calendarDay) {
+      calendarDay.classList.remove("color-연차", "color-monthlyleave");
+      if (isDayOff(date)) {
+        calendarDay.classList.add("color-연차");
+      } else if (ismonthlyleaveUsed(date)) {
+        calendarDay.classList.add("color-monthlyleave");
+      }
+    }
+  }
+
+  function cancelLeave(date) {
+    const [month, day, year] = date.split("-");
+    const calendarDay = document.querySelector(
+      `.day:not(.day-header):nth-child(${parseInt(day) + new Date(year, month - 1, 1).getDay()})`
+    );
+
+    if (calendarDay) {
+      if (calendarDay.classList.contains("color-연차")) {
+        calendarDay.classList.remove("color-연차");
+        daysOffUsed--;
+        updateDaysOffCounter();
+      } else if (calendarDay.classList.contains("color-monthlyleave")) {
+        calendarDay.classList.remove("color-monthlyleave");
+        monthlyLeaveUsed--;
+        updateMonthlyLeaveCounter();
+      }
+
+      calendarDay.classList.remove("color-연차", "color-monthlyleave");
+
+      if (calendarDay.classList.contains("weekend")) {
+        calendarDay.style.backgroundColor = "";
+      } else if (holidays2025[`${month}-${day}`]) {
+        calendarDay.classList.add("holiday");
+      } else {
+        calendarDay.style.backgroundColor = "";
+      }
+    }
+
+    if (notes[date]) {
+      notes[date] = [];
+      updateNotesList(date);
+    }
+  }
+
+  window.onclick = (event) => {
+    const modal = document.getElementById("noteModal");
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  };
+
+  document.querySelector(".close").onclick = () => {
+    document.getElementById("noteModal").style.display = "none";
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      navigateMonth(-1);
+    } else if (e.key === "ArrowRight") {
+      navigateMonth(1);
+    }
+  });
+
+  function navigateMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
+    } else if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    generateCalendar(currentMonth, currentYear);
+  }
+
+  document.getElementById("prevMonth").onclick = () => navigateMonth(-1);
+  document.getElementById("nextMonth").onclick = () => navigateMonth(1);
+
+  generateCalendar(currentMonth, currentYear);
+  generateFullYearView(currentYear);
+</script>
+</body>
 </html>
